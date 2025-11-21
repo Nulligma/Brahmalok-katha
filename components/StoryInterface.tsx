@@ -402,7 +402,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
                 ) : (
                     <>
                          {/* Mobile Avatar Row - Side by side at the top */}
-                         <div className="md:hidden w-full flex justify-between px-6 shrink-0 mb-2 z-10">
+                         <div className="md:hidden w-full flex justify-between px-6 shrink-0 mb-6 z-10">
                             <div className={`transition-all duration-500 ${isBrahma ? 'opacity-100 scale-110' : 'opacity-50 grayscale scale-90'}`}>
                                  <Avatar type="Brahma" isActive={isBrahma} />
                             </div>
@@ -481,7 +481,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
 
             {/* Navigation Controls - Footer */}
             {!loading && (
-                <div className="shrink-0 z-30 w-full max-w-5xl mt-2 md:mt-8 bg-slate-900/80 backdrop-blur-xl p-2 md:p-4 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl">
+                <div className="shrink-0 z-30 w-full max-w-5xl mt-6 md:mt-8 bg-slate-900/80 backdrop-blur-xl p-2 md:p-4 rounded-2xl md:rounded-3xl border border-white/10 shadow-2xl">
                     <div className="flex items-center justify-between gap-2 md:gap-4">
                         
                         {/* Left: Prev Button */}
