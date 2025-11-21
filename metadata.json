@@ -1,0 +1,7 @@
+{
+  "name": "Katha: Sacred Rivers of Brahmalok",
+  "description": "An interactive storytelling experience narrated by Lord Brahma and Mata Sarasvati, exploring the divine legends of India's sacred rivers through generative AI text and imagery.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
