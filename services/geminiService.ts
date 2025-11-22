@@ -3,6 +3,48 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { getBrahmaInstruction, getQuestionInstruction, LANGUAGES } from "../constants";
 import { Language, StorySegment } from "../types";
 
+// --- START DEV ONLY: USAGE TRACKING ---
+export interface UsageRecord {
+    timestamp: number;
+    model: string;
+    type: 'Text' | 'Audio' | 'Image';
+    inputTokens: number;
+    outputTokens: number;
+}
+
+let usageHistory: UsageRecord[] = [];
+
+export const clearUsageHistory = () => {
+    usageHistory = [];
+};
+
+export const getUsageHistory = () => {
+    return [...usageHistory];
+};
+
+const logUsage = (model: string, type: 'Text' | 'Audio' | 'Image', response: any) => {
+    const meta = response.usageMetadata;
+    if (meta) {
+        usageHistory.push({
+            timestamp: Date.now(),
+            model,
+            type,
+            inputTokens: meta.promptTokenCount || 0,
+            outputTokens: meta.candidatesTokenCount || 0
+        });
+    } else if (type === 'Image') {
+        // Fallback for image if no metadata, assume fixed cost tracking logic elsewhere relies on count
+        usageHistory.push({
+            timestamp: Date.now(),
+            model,
+            type,
+            inputTokens: 0,
+            outputTokens: 0
+        });
+    }
+};
+// --- END DEV ONLY ---
+
 const getClient = () => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
@@ -51,6 +93,8 @@ export const generateStoryScript = async (
             }
         });
 
+        logUsage(model, 'Text', response);
+
         if (response.text) {
             return JSON.parse(response.text) as StorySegment[];
         }
@@ -75,8 +119,9 @@ Answer questions about the river's mythology, geography, or spiritual significan
 If this is the start of the conversation, welcome the devotee to the banks of ${riverName}.`;
 
     try {
+        const model = "gemini-2.5-flash";
         const chat = ai.chats.create({
-            model: "gemini-2.5-flash",
+            model,
             config: {
                 systemInstruction,
                 temperature: 0.7
@@ -89,6 +134,9 @@ If this is the start of the conversation, welcome the devotee to the banks of ${
 
         const lastMessage = history.length > 0 ? history[history.length - 1].text : "Pranam, Lord Brahma.";
         const response = await chat.sendMessage({ message: lastMessage });
+        
+        logUsage(model, 'Text', response);
+        
         return response.text;
     } catch (error) {
         console.error("Chat generation error", error);
@@ -106,14 +154,18 @@ export const generateAnswer = async (
     const systemInstruction = getQuestionInstruction(language, langConfig.name);
 
     try {
+        const model = "gemini-2.5-flash";
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model,
             contents: `Context: ${context}\n\nUser Question: ${question}`,
             config: {
                 systemInstruction: systemInstruction,
                 temperature: 0.7,
             }
         });
+
+        logUsage(model, 'Text', response);
+
         return response.text || "Silence echoes in the void.";
     } catch (e) {
         return "I cannot hear you clearly amidst the cosmic roar.";
@@ -122,15 +174,18 @@ export const generateAnswer = async (
 
 export const generateDivineIllustration = async (prompt: string): Promise<string | null> => {
     const ai = getClient();
+    const model = 'gemini-2.5-flash-image';
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model,
             contents: {
                 parts: [
                     { text: `A divine, mystical, high-quality oil painting style illustration of: ${prompt}. Indian mythology art style, glowing, ethereal, detailed, masterpiece.` }
                 ]
             }
         });
+
+        logUsage(model, 'Image', response);
 
         if (response.candidates && response.candidates[0].content.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -148,13 +203,12 @@ export const generateDivineIllustration = async (prompt: string): Promise<string
 
 export const generateSpeech = async (text: string, speaker: 'Brahma' | 'Sarasvati'): Promise<string | null> => {
     const ai = getClient();
-    // Brahma = Charon (Deep/Wise/Elderly), Sarasvati = Aoede (Cheerful/Compassionate)
-    // Aoede provides a higher pitch, energetic tone suitable for the "cheerful goddess" description.
     const voiceName = speaker === 'Brahma' ? 'Charon' : 'Aoede';
+    const model = "gemini-2.5-flash-preview-tts";
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
+            model,
             contents: [{ parts: [{ text: text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
@@ -165,6 +219,8 @@ export const generateSpeech = async (text: string, speaker: 'Brahma' | 'Sarasvat
                 },
             },
         });
+
+        logUsage(model, 'Audio', response);
 
         // Extract base64 audio data
         const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;

@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { River, Language, TranslationBundle, StorySegment } from '../types';
-import { generateStoryScript, generateDivineIllustration, generateSpeech } from '../services/geminiService';
-import { ArrowLeft, ChevronRight, ChevronLeft, Send, X, Sparkles, Image as ImageIcon, RefreshCw, Mic, MicOff, Volume2, Loader2, StopCircle, VolumeX } from 'lucide-react';
+import { generateStoryScript, generateDivineIllustration, generateSpeech, getUsageHistory, clearUsageHistory } from '../services/geminiService';
+import { ArrowLeft, ChevronRight, ChevronLeft, Send, X, Sparkles, Image as ImageIcon, RefreshCw, Mic, MicOff, Volume2, Loader2, StopCircle, VolumeX, Coins } from 'lucide-react';
 import { LOADING_MESSAGES, getQuestionSuggestions } from '../constants';
 import { Button } from './Button';
+import { Analytics } from '../services/analytics';
 
 interface StoryInterfaceProps {
   river: River;
@@ -111,12 +112,15 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
     // Popups
     const [showQuestionPopup, setShowQuestionPopup] = useState(false);
     const [showImagePopup, setShowImagePopup] = useState(false);
+    const [showEstimatePopup, setShowEstimatePopup] = useState(false);
     const [questionInput, setQuestionInput] = useState("");
     const [isListening, setIsListening] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
     const [imageLoadingMsg, setImageLoadingMsg] = useState("");
     const [isImageLoading, setIsImageLoading] = useState(false);
     const [voiceStatus, setVoiceStatus] = useState<string>("");
+    
+    const [usageStats, setUsageStats] = useState<{ totalCost: number; summary: any } | null>(null);
 
     // Audio State
     const [isAudioPlaying, setIsAudioPlaying] = useState(false);
@@ -132,6 +136,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
 
     useEffect(() => {
         loadStory();
+        Analytics.logStoryStart(river.name);
         return () => {
              stopAudio();
              if (audioContextRef.current) {
@@ -144,6 +149,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
     useEffect(() => {
         if (currentIndex >= 0 && script[currentIndex]) {
             playCurrentSegmentAudio();
+            Analytics.logStoryProgress(river.name, currentIndex + 1, script.length);
         }
     }, [currentIndex]);
 
@@ -161,10 +167,16 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
         setLoading(true);
         setScript([]);
         setCurrentIndex(-1);
+        clearUsageHistory(); // Clear previous session stats
+        setUsageStats(null);
         
         // Increment version to invalidate previous background tasks
         storyVersionRef.current += 1;
         const currentVersion = storyVersionRef.current;
+        
+        if (topic) {
+            Analytics.logStoryStart(river.name, 'User Question');
+        }
 
         const newScript = await generateStoryScript(river.name, language, topic);
         
@@ -205,11 +217,68 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
         }
     };
 
+    const computeCostForAnalytics = () => {
+        const history = getUsageHistory();
+        let totalCost = 0;
+        history.forEach(record => {
+            if (record.type === 'Text') totalCost += (record.inputTokens / 1000000) * 0.075 + (record.outputTokens / 1000000) * 0.30;
+            else if (record.type === 'Audio') totalCost += (record.inputTokens / 1000000) * 0.075 + (record.outputTokens / 1000000) * 10.00;
+            else if (record.type === 'Image') totalCost += 0.03;
+        });
+        return totalCost;
+    };
+
+    const calculateUsageStats = () => {
+        const history = getUsageHistory();
+        let totalCost = 0;
+        
+        const summary = {
+            text: { input: 0, output: 0, cost: 0, count: 0, models: new Set<string>() },
+            audio: { input: 0, output: 0, cost: 0, count: 0, models: new Set<string>() },
+            image: { count: 0, cost: 0, models: new Set<string>() }
+        };
+
+        history.forEach(record => {
+            let cost = 0;
+            // Estimation rates for DEV
+            if (record.type === 'Text') {
+                // Flash 2.5 Text Approx: Input $0.075/1M, Output $0.30/1M
+                cost = (record.inputTokens / 1000000) * 0.075 + (record.outputTokens / 1000000) * 0.30;
+                summary.text.input += record.inputTokens;
+                summary.text.output += record.outputTokens;
+                summary.text.count++;
+                summary.text.cost += cost;
+                summary.text.models.add(record.model);
+            } else if (record.type === 'Audio') {
+                // Audio Output Estimate (TTS)
+                cost = (record.inputTokens / 1000000) * 0.075 + (record.outputTokens / 1000000) * 10.00;
+                summary.audio.input += record.inputTokens;
+                summary.audio.output += record.outputTokens;
+                summary.audio.count++;
+                summary.audio.cost += cost;
+                summary.audio.models.add(record.model);
+            } else if (record.type === 'Image') {
+                cost = 0.03; // Approx $0.03 per image
+                summary.image.count++;
+                summary.image.cost += cost;
+                summary.image.models.add(record.model);
+            }
+            totalCost += cost;
+        });
+
+        setUsageStats({ totalCost, summary });
+    };
+
     const handleNext = () => {
         if (currentIndex < script.length - 1) {
             setCurrentIndex(prev => prev + 1);
         } else {
             stopAudio();
+            // Log Story Completion and Cost at the end
+            Analytics.logStoryComplete(river.name, script.length);
+            const currentCost = computeCostForAnalytics();
+            Analytics.logCostEstimate(river.name, currentCost);
+            
             setShowQuestionPopup(true);
         }
     };
@@ -224,6 +293,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
         const topic = customTopic || questionInput;
         if (!topic.trim()) return;
         
+        Analytics.logQuestionAsked(river.name, isListening ? 'voice' : 'text');
         setShowQuestionPopup(false);
         setQuestionInput("");
         setVoiceStatus("");
@@ -235,6 +305,8 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
         setIsImageLoading(true);
         setGeneratedImage(null);
         setImageLoadingMsg(LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)]);
+
+        Analytics.logImageGeneration(river.name);
 
         const currentSegment = script[currentIndex];
         const prompt = currentSegment.visualDescription || currentSegment.text;
@@ -303,6 +375,8 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
             audioSourceRef.current = source;
             source.start();
             setIsAudioPlaying(true);
+            
+            Analytics.logAudioPlay(river.name, script[currentIndex].speaker);
 
         } catch (error) {
             console.error("Audio playback error:", error);
@@ -492,6 +566,15 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
 
                         {/* Center: Primary Controls Group */}
                         <div className="flex items-center justify-center gap-3 flex-1">
+                            {/* Estimate Button (New) */}
+                            <button 
+                                onClick={() => { calculateUsageStats(); setShowEstimatePopup(true); }} 
+                                className="hidden p-3 rounded-full bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400 hover:text-emerald-200 border border-emerald-500/30 transition-colors shadow-lg" 
+                                title="Cost Estimate (Dev)"
+                            >
+                                <Coins className="w-4 h-4 md:w-5 md:h-5" />
+                            </button>
+
                             {/* Replay */}
                             <button onClick={() => loadStory()} className="p-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition-colors shadow-lg" title={translations.replayBtn}>
                                 <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
@@ -507,10 +590,12 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
                                 <span className="hidden md:inline text-base">{translations.visualizeBtn}</span>
                             </button>
                             
-                            {/* Ask Question */}
-                            <button onClick={() => setShowQuestionPopup(true)} className="p-3 rounded-full bg-amber-900/40 hover:bg-amber-800/60 text-amber-400 hover:text-amber-200 border border-amber-500/30 transition-colors shadow-lg" title={translations.askQuestionBtn}>
-                                <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-                            </button>
+                            {/* Ask Question - Hide on last slide as the Next button becomes Ask Question */}
+                            {currentIndex !== script.length - 1 && (
+                                <button onClick={() => setShowQuestionPopup(true)} className="p-3 rounded-full bg-amber-900/40 hover:bg-amber-800/60 text-amber-400 hover:text-amber-200 border border-amber-500/30 transition-colors shadow-lg" title={translations.askQuestionBtn}>
+                                    <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Right: Next Button */}
@@ -523,6 +608,84 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
             )}
 
             {/* --- POPUPS --- */}
+            
+            {/* ESTIMATE POPUP */}
+            {showEstimatePopup && usageStats && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl w-full max-w-lg overflow-hidden shadow-[0_0_40px_rgba(16,185,129,0.2)] flex flex-col">
+                         <div className="bg-slate-800/50 p-4 border-b border-emerald-500/20 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Coins className="w-5 h-5 text-emerald-400" />
+                                <h3 className="font-bold text-emerald-100 uppercase tracking-wider text-sm">Cost Estimation (Dev)</h3>
+                            </div>
+                            <button onClick={() => setShowEstimatePopup(false)} className="text-slate-400 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 space-y-6 text-sm text-slate-300 font-mono">
+                            <div className="bg-slate-950/50 rounded-lg p-4 border border-white/5">
+                                <div className="flex justify-between text-slate-400 text-xs mb-2 uppercase font-bold tracking-wider border-b border-white/5 pb-1">
+                                    <span>Type</span>
+                                    <span>Model</span>
+                                </div>
+                                <div className="space-y-4">
+                                    {/* Text */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-white">Text Generation</span>
+                                            <span className="text-emerald-400">~${usageStats.summary.text.cost.toFixed(4)}</span>
+                                        </div>
+                                        <div className="text-xs text-slate-500 mb-1 break-all">Model: {Array.from(usageStats.summary.text.models).join(', ') || 'N/A'}</div>
+                                        <div className="flex justify-between text-xs text-slate-400">
+                                            <span>{usageStats.summary.text.count} requests</span>
+                                            <span>{usageStats.summary.text.input} in / {usageStats.summary.text.output} out</span>
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">Typical: $0.075/1M In, $0.30/1M Out</div>
+                                    </div>
+
+                                    {/* Audio */}
+                                    <div className="border-t border-white/5 pt-3">
+                                         <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-white">Audio (TTS)</span>
+                                            <span className="text-emerald-400">~${usageStats.summary.audio.cost.toFixed(4)}</span>
+                                        </div>
+                                        <div className="text-xs text-slate-500 mb-1 break-all">Model: {Array.from(usageStats.summary.audio.models).join(', ') || 'N/A'}</div>
+                                        <div className="flex justify-between text-xs text-slate-400">
+                                            <span>{usageStats.summary.audio.count} requests</span>
+                                            <span>{usageStats.summary.audio.input} in / {usageStats.summary.audio.output} out</span>
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">Typical: Est. $10.00/1M Out (TTS)</div>
+                                    </div>
+
+                                    {/* Image */}
+                                    <div className="border-t border-white/5 pt-3">
+                                         <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-white">Image Generation</span>
+                                            <span className="text-emerald-400">~${usageStats.summary.image.cost.toFixed(4)}</span>
+                                        </div>
+                                        <div className="text-xs text-slate-500 mb-1 break-all">Model: {Array.from(usageStats.summary.image.models).join(', ') || 'N/A'}</div>
+                                        <div className="flex justify-between text-xs text-slate-400">
+                                            <span>{usageStats.summary.image.count} images</span>
+                                            <span>Fixed Price</span>
+                                        </div>
+                                        <div className="text-[10px] text-slate-600 mt-0.5">Typical: ~$0.03 per image</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-2 border-t border-white/10 text-base">
+                                <span className="text-white font-bold">Total Estimate</span>
+                                <span className="text-xl text-emerald-400 font-bold tracking-tight">${usageStats.totalCost.toFixed(4)}</span>
+                            </div>
+                            
+                            <p className="text-xs text-slate-500 italic text-center">
+                                *Estimates based on approximate public pricing. Actual billing may vary.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Question/Topic Popup */}
             {showQuestionPopup && (
@@ -536,6 +699,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
                         </div>
                         
                         <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                            
                             {/* Suggestions */}
                             <div className="mb-6">
                                 <h4 className="text-sm text-amber-200/70 uppercase tracking-wider mb-3 font-bold">{translations.suggestionsTitle}</h4>
@@ -544,7 +708,7 @@ export const StoryInterface: React.FC<StoryInterfaceProps> = ({ river, language,
                                         <button 
                                             key={idx}
                                             onClick={() => handleAskQuestion(suggestion)}
-                                            className="text-left px-3 py-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 hover:bg-indigo-900/60 hover:border-amber-500/50 text-slate-200 text-xs md:text-sm transition-all duration-300"
+                                            className="text-left px-3 py-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 hover:bg-indigo-900/60 hover:border-amber-500/50 text-slate-200 text-sm md:text-base transition-all duration-300"
                                         >
                                             <Sparkles className="w-3 h-3 inline-block mr-2 text-amber-400" />
                                             {suggestion}

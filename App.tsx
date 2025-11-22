@@ -7,6 +7,8 @@ import { StoryInterface } from './components/StoryInterface';
 import { Button } from './components/Button';
 import { Sparkle } from './components/Sparkle';
 import { ArrowLeft } from 'lucide-react';
+import { Analytics } from './services/analytics';
+import { LanguageSelector } from './components/LanguageSelector';
 
 const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>(ViewState.LANDING);
@@ -17,10 +19,12 @@ const App: React.FC = () => {
   const rivers = getRivers(selectedLanguage);
 
   const handleStartJourney = () => {
+    Analytics.logBeginJourney();
     setViewState(ViewState.RIVER_SELECTION);
   };
 
   const handleSelectRiver = (river: River) => {
+    Analytics.logRiverSelect(river.id, river.name);
     setSelectedRiver(river);
     setViewState(ViewState.STORY_TELLING);
   };
@@ -28,6 +32,11 @@ const App: React.FC = () => {
   const handleBackToRivers = () => {
     setSelectedRiver(null);
     setViewState(ViewState.RIVER_SELECTION);
+  };
+
+  const handleLanguageChange = (langCode: Language) => {
+    Analytics.logLanguageChange(langCode);
+    setSelectedLanguage(langCode);
   };
 
   return (
@@ -39,9 +48,9 @@ const App: React.FC = () => {
       <div className="fixed top-0 left-0 w-full h-32 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-10" />
       <div className="fixed bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-10" />
 
-      {/* Navigation/Header */}
-      <nav className="w-full p-4 md:p-6 z-50 flex items-center justify-center relative">
-        {viewState === ViewState.STORY_TELLING && (
+      {/* Navigation/Header - Only visible in Story Telling */}
+      {viewState === ViewState.STORY_TELLING && (
+        <nav className="w-full p-4 md:p-6 z-50 flex items-center justify-center relative animate-fade-in">
             <button 
                 onClick={handleBackToRivers}
                 className="absolute left-4 md:left-8 flex items-center gap-2 text-amber-200 hover:text-white transition-colors bg-black/20 p-2 md:px-4 md:py-2 rounded-full backdrop-blur-md border border-white/10 z-50"
@@ -50,16 +59,19 @@ const App: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
                 <span className="hidden md:inline font-divine">{t.backBtn}</span>
             </button>
-        )}
 
-        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setViewState(ViewState.LANDING)}>
-            <Sparkle className="text-amber-400 w-6 h-6 md:w-8 md:h-8" />
-            <h1 className="text-2xl md:text-4xl font-divine text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 tracking-wider">
-            {t.appName}
-            </h1>
-            <Sparkle className="text-amber-400 w-6 h-6 md:w-8 md:h-8" />
-        </div>
-      </nav>
+            <div 
+                className="flex items-center gap-2 cursor-pointer select-none transition-all duration-300 bg-slate-900/60 backdrop-blur-xl px-6 py-2 rounded-full border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:bg-slate-800 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 group"
+                onClick={() => setViewState(ViewState.LANDING)}
+            >
+                <Sparkle className="text-amber-400 w-6 h-6 md:w-8 md:h-8 group-hover:rotate-12 transition-transform" />
+                <h1 className="text-2xl md:text-4xl font-divine text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 tracking-wider">
+                {t.appName}
+                </h1>
+                <Sparkle className="text-amber-400 w-6 h-6 md:w-8 md:h-8 group-hover:-rotate-12 transition-transform" />
+            </div>
+        </nav>
+      )}
 
       {/* Main Content Container */}
       <main className="flex-1 flex flex-col relative z-20 container mx-auto px-4 pb-2 md:pb-6 h-full overflow-hidden">
@@ -68,22 +80,7 @@ const App: React.FC = () => {
         {viewState === ViewState.LANDING && (
           <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 animate-fade-in overflow-y-auto py-8">
             
-            {/* Language Selector */}
-            <div className="bg-slate-900/40 backdrop-blur-md rounded-full p-2 border border-white/10 flex flex-wrap justify-center gap-1">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => setSelectedLanguage(lang.code)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    selectedLanguage === lang.code
-                      ? 'bg-amber-600 text-white shadow-[0_0_10px_rgba(245,158,11,0.4)]'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {lang.nativeName}
-                </button>
-              ))}
-            </div>
+            <LanguageSelector selectedLanguage={selectedLanguage} onLanguageChange={handleLanguageChange} />
 
             <div className="relative group mt-8">
                 <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl opacity-50 group-hover:opacity-70 transition-opacity duration-1000" />
@@ -97,7 +94,7 @@ const App: React.FC = () => {
             
             <div className="max-w-2xl space-y-4">
               <h2 className="text-5xl md:text-7xl font-divine text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                Brahmalok
+                Brahmalok Katha
               </h2>
               <p className="text-xl md:text-2xl text-slate-300 font-light tracking-wide italic">
                 "{t.tagline}"
@@ -117,13 +114,18 @@ const App: React.FC = () => {
 
         {/* RIVER SELECTION VIEW */}
         {viewState === ViewState.RIVER_SELECTION && (
-          <div className="flex-1 flex flex-col items-center w-full space-y-8 animate-fade-in overflow-y-auto py-4">
-            <div className="text-center mb-4">
+          <div className="flex-1 flex flex-col items-center w-full space-y-6 animate-fade-in overflow-y-auto py-4">
+            
+            <div className="w-full flex justify-center mb-2">
+                <LanguageSelector selectedLanguage={selectedLanguage} onLanguageChange={handleLanguageChange} />
+            </div>
+
+            <div className="text-center mb-2">
               <h2 className="text-3xl font-divine text-amber-100">{t.chooseRiverTitle}</h2>
               <p className="text-slate-400 mt-2">{t.chooseRiverSubtitle}</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl pb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl pb-8 px-4">
               {rivers.map((river) => (
                 <RiverCard 
                   key={river.id} 
