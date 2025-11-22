@@ -38,6 +38,7 @@ export interface TranslationBundle {
   voiceNoSpeech: string;
   listenBtn: string;
   stopBtn: string;
+  joinWhatsapp: string;
 }
 
 export interface River {

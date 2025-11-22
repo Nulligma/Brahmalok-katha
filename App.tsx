@@ -94,7 +94,7 @@ const App: React.FC = () => {
             
             <div className="max-w-2xl space-y-4">
               <h2 className="text-5xl md:text-7xl font-divine text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                Brahmalok Katha
+                Brahmalok
               </h2>
               <p className="text-xl md:text-2xl text-slate-300 font-light tracking-wide italic">
                 "{t.tagline}"
@@ -133,6 +133,13 @@ const App: React.FC = () => {
                   onSelect={handleSelectRiver} 
                 />
               ))}
+            </div>
+            <div className="pt-4">
+              <a href="https://chat.whatsapp.com/GWWZngBJzYsDZ8AGzF6Xt4" target="_blank" rel="noopener noreferrer">
+                <Button className="text-sm px-6 py-3">
+                  {t.joinWhatsapp}
+                </Button>
+              </a>
             </div>
           </div>
         )}

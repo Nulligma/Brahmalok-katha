@@ -27,7 +27,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     imageRevealText: "Behold, the divine vision:",
     visualizeBtn: "Visualize this scene",
     visualizingBtn: "Painting...",
-    footerText: "© 2024 Katha. Driven by Gemini AI.",
+    footerText: "product of nadistui.com",
     you: "YOU",
     listenLegend: "Listen to the Legend",
     nextBtn: "Next",
@@ -43,7 +43,8 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     voiceNotSupported: "Voice input not supported on this device",
     voiceNoSpeech: "No speech detected. Please try again.",
     listenBtn: "Listen",
-    stopBtn: "Stop"
+    stopBtn: "Stop",
+    joinWhatsapp: "Join Nadi stuti sabha"
   },
   hi: {
     appName: "कथा",
@@ -59,7 +60,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     imageRevealText: "देखो, दिव्य दृष्टि:",
     visualizeBtn: "दृश्य देखें",
     visualizingBtn: "चित्रण हो रहा है...",
-    footerText: "© 2024 कथा. जेमिनी एआई द्वारा संचालित.",
+    footerText: "nadistui.com का उत्पाद",
     you: "आप",
     listenLegend: "किंवदंती सुनें",
     nextBtn: "अगला",
@@ -75,7 +76,8 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     voiceNotSupported: "इस डिवाइस पर वॉयस इनपुट समर्थित नहीं है",
     voiceNoSpeech: "कोई आवाज नहीं सुनाई दी। कृपया पुनः प्रयास करें।",
     listenBtn: "सुनें",
-    stopBtn: "रुकें"
+    stopBtn: "रुकें",
+    joinWhatsapp: "नदी स्तुति सभा से जुड़ें"
   },
   mr: {
     appName: "कथा",
@@ -91,7 +93,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     imageRevealText: "पाहा, दिव्य दृष्टी:",
     visualizeBtn: "दृश्य पाहा",
     visualizingBtn: "चित्रण होत आहे...",
-    footerText: "© 2024 कथा. जेमिनी एआई द्वारे समर्थित.",
+    footerText: "nadistui.com चे उत्पादन",
     you: "तुम्ही",
     listenLegend: "आख्यायिका ऐका",
     nextBtn: "पुढील",
@@ -107,7 +109,8 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     voiceNotSupported: "या डिव्हाइसवर व्हॉइस इनपुट समर्थित नाही",
     voiceNoSpeech: "आवाज आढळली नाही. कृपया पुन्हा प्रयत्न करा.",
     listenBtn: "ऐका",
-    stopBtn: "थांबा"
+    stopBtn: "थांबा",
+    joinWhatsapp: "नदी स्तुति सभामध्ये सामील व्हा"
   },
   kn: {
     appName: "ಕಥಾ",
@@ -123,7 +126,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     imageRevealText: "ಇಗೋ, ದಿವ್ಯ ದರ್ಶನ:",
     visualizeBtn: "ದೃಶ್ಯ ನೋಡಿ",
     visualizingBtn: "ದೃಶ್ಯೀಕರಿಸಲಾಗುತ್ತಿದೆ...",
-    footerText: "© 2024 ಕಥಾ. ಜೆಮಿನಿ AI ನಿಂದ ನಡೆಸಲ್ಪಡುತ್ತಿದೆ.",
+    footerText: "nadistui.com ನ ಉತ್ಪನ್ನ",
     you: "ನೀವು",
     listenLegend: "ಪುರಾಣವನ್ನು ಆಲಿಸಿ",
     nextBtn: "ಮುಂದೆ",
@@ -139,7 +142,8 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     voiceNotSupported: "ಈ ಸಾಧನದಲ್ಲಿ ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಬೆಂಬಲಿತವಾಗಿಲ್ಲ",
     voiceNoSpeech: "ಯಾವುದೇ ಧ್ವನಿ ಕೇಳಿಸಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
     listenBtn: "ಆಲಿಸಿ",
-    stopBtn: "ನಿಲ್ಲಿಸಿ"
+    stopBtn: "ನಿಲ್ಲಿಸಿ",
+    joinWhatsapp: "ನದಿ ಸ್ತುತಿ ಸభೆಗೆ ಸೇರಿ"
   },
   ta: {
     appName: "கதா",
@@ -155,7 +159,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     imageRevealText: "இதோ, தெய்வீக காட்சி:",
     visualizeBtn: "காட்சிப்படுத்து",
     visualizingBtn: "வரைகிறது...",
-    footerText: "© 2024 கதா. ஜெமினி AI மூலம் இயங்குகிறது.",
+    footerText: "nadistui.com இன் தயாரிப்பு",
     you: "நீங்கள்",
     listenLegend: "புராணத்தைக் கேளுங்கள்",
     nextBtn: "அடுத்து",
@@ -171,7 +175,8 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     voiceNotSupported: "இந்தச் சாதனத்தில் குரல் உள்ளீடு ஆதரிக்கப்படவில்லை",
     voiceNoSpeech: "பேச்சு எதுவும் கண்டறியப்படவில்லை. மீண்டும் முயற்சிக்கவும்.",
     listenBtn: "கேளுங்கள்",
-    stopBtn: "நிறுத்து"
+    stopBtn: "நிறுத்து",
+    joinWhatsapp: "நதி ஸ்துதி சபாவில் சேரவும்"
   },
   ml: {
     appName: "കഥ",
@@ -187,7 +192,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     imageRevealText: "ഇതാ, ദിവ്യ ദർശനം:",
     visualizeBtn: "ദൃശ്യവൽക്കരിക്കുക",
     visualizingBtn: "ദൃശ്യവൽക്കരിക്കുന്നു...",
-    footerText: "© 2024 കഥ. ജെമിനി എഐ നൽകുന്നത്.",
+    footerText: "nadistui.com-ന്റെ ഉൽപ്പന്നം",
     you: "നിങ്ങൾ",
     listenLegend: "ഐതിഹ്യം കേൾക്കൂ",
     nextBtn: "അടുത്തത്",
@@ -203,7 +208,8 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
     voiceNotSupported: "ഈ ഉപകരണത്തിൽ വോയ്‌സ് ഇൻപുട്ട് പിന്തുണയ്ക്കുന്നില്ല",
     voiceNoSpeech: "ശബ്ദമൊന്നും കണ്ടെത്തിയില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
     listenBtn: "കേൾക്കൂ",
-    stopBtn: "നിർത്തുക"
+    stopBtn: "നിർത്തുക",
+    joinWhatsapp: "നദി സ്തുതി സഭയിൽ ചേരുക"
   }
 };
 
